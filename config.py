@@ -145,6 +145,7 @@ class DeadlineDialog(QDialog):
             self.LayoutForCal.listWidget.addItem(deck)
 
     def onDelete(self):
+        """Handle deletion of deadlines"""
         while self.form.fieldList.selectedIndexes():
             temp = self.form.fieldList.item(
                 self.form.fieldList.selectedIndexes()[0].row()
@@ -156,11 +157,20 @@ class DeadlineDialog(QDialog):
             date = fields[2].split("{")[1]
             self.deadlines["deadlines"].get(user).pop(deck)
             mw.addonManager.writeConfig(__name__, self.deadlines)
-            delConfId = mw.col.decks.by_name(deck)["conf"]
-            # Don't even attempt to delete the default conf; otherwise we would get an error pop up
-            if delConfId != 1:
-                mw.col.decks.remove_config(delConfId)
-        # self.fillFields()
+
+            # Get the deck
+            deck_id = mw.col.decks.id_for_name(deck)
+            if deck_id:
+                deck_obj = mw.col.decks.get(deck_id)
+                if deck_obj:
+                    # Remove the deck-specific overrides
+                    deck_obj["newLimit"] = None
+                    deck_obj["reviewLimit"] = None
+                    mw.col.decks.save(deck_obj)
+
+        # Refresh the fields list
+        self.fillFields()
 
     def onHelp(self):
         openLink("https://github.com/BSCrumpton/Deadline2")
+
